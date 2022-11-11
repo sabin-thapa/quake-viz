@@ -5,11 +5,12 @@ name = "pypi"
 
 [packages]
 pandas = "*"
-requests = "*"
 geocoder = "*"
+dash = "*"
 
 [dev-packages]
 jupyter = "*"
+black = "*"
 
 [requires]
 python_version = "3.10"
