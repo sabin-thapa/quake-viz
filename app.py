@@ -12,19 +12,31 @@ from dash import (
 app = Dash(__name__)
 app.title = "US Earthquakes Visualization"
 
+colors = {
+    'background': '#f1f1f1',
+    'text': '#6B7597'
+}
+
 # Data Preparation
 earthquakes = pd.read_csv(
     "datasets/us_earthquakes.csv",
     parse_dates=["time"],
 )
 
+
 earthquakes["magType"] = earthquakes["magType"].astype("category")
 earthquakes["type"] = earthquakes["type"].astype("category")
 earthquakes["status"] = earthquakes["status"].astype("category")
-earthquakes["locationSource"] = earthquakes["locationSource"].astype("category")
+earthquakes["locationSource"] = earthquakes["locationSource"].astype(
+    "category")
 earthquakes["state"] = earthquakes["state"].astype("category")
 earthquakes["state_code"] = earthquakes["state_code"].astype("category")
 earthquakes["month"] = earthquakes["month"].astype("category")
+
+
+# Scatter Plot - mag vs earthquakes count for different states
+fig = px.scatter(earthquakes, x="mag", y="state", color="mag",
+                 hover_name="state_code", log_x=True, size_max=60)
 
 # Data Preparation - Heatmap
 heatmap_df = earthquakes.copy()
@@ -52,18 +64,35 @@ scatter_plot_df = scatter_plot_df.assign(date=scatter_plot_df["time"].dt.date)
 # App layout
 app.layout = html.Div(
     id="dashboard",
-    # Header
+    style={
+        'backgroundColor': colors['background']
+    },
     children=[
+        # Header
         html.Div(
             id="header",
+            style={"text-align": "center", "color": colors["text"]},
             children=[
                 html.H1("US Earthquakes Visualization"),
             ],
         ),
-        # Map
+        # Sub Header
         html.Div(
-            id="map",
-            style={"backgroundColor": "#fff"},
+            id="subheader",
+            style={
+                'text-align': 'center', 'color': colors['text'],
+            },
+            children='Visualization of earthquakes in the states of the US'
+        ),
+
+        # Dropdown
+        html.Div(
+            style={
+                'display': 'flex',
+                'alignItems': 'center',
+                'color': colors['text'],
+                'fontWeight': 'bold'
+            },
             children=[
                 html.P("Select month:"),
                 # Dropdown
@@ -71,36 +100,73 @@ app.layout = html.Div(
                     id="month-selection",
                     options=["January", "February", "March"],
                     value="January",
+                    style={
+                        'width': '30%',
+                        'marginLeft': '10px'
+
+                    }
                 ),
+            ]
+        ),
+
+        # Map
+        html.Div(
+            id="map",
+            style={
+                "backgroundColor": "#fff",
+                "display": "flex",
+                'flexDirection': 'row',
+                'height': '700px',
+                'width': '100%',
+            },
+            children=[
+
                 # Heatmap
                 dcc.Graph(
                     id="state-choropleth",
                     figure={},
+                    style={
+                        'width': '60%'
+                    }
                 ),
                 # Scatter Plot
                 dcc.Graph(
                     id="state-scatter-plot",
                     figure={},
+                       style={
+                        'width': '40%'
+                    }
                 ),
             ],
         ),
+
+        # Dropdowns for Barchart and Piechart
         html.Div(
-            id="chart-selector",
-            style={"backgroundColor": "#fff"},
-            children=[
-                html.P("Select information:"),
-                # Dropdown - Information
-                dcc.Dropdown(
-                    id="attribute-selection",
-                    options=[
-                        {"label": "Earthquakes by type.", "value": "type"},
-                        {
-                            "label": "Earthquakes by review status.",
-                            "value": "status",
-                        },
-                    ],
-                    value="type",
-                ),
+            style={
+                'display': 'flex',
+                'width': '60%',
+                'alignItems': 'center',
+                'color': colors['text'],
+                'fontWeight': 'bold'
+            },
+            children=[html.P("Select information:"),
+                      # Dropdown - Information
+                      dcc.Dropdown(
+                id="attribute-selection",
+                options=[
+                    {"label": "Earthquakes by type.", "value": "type"},
+                    {
+                        "label": "Earthquakes by review status.",
+                        "value": "status",
+                    },
+                ],
+                value="type",
+                style={
+                    'width': '90%',
+                    'marginLeft': '10px',
+                    'marginRight': '10%'
+                }
+            ),
                 html.P("Select chart:"),
                 # Dropdown - Chart Type
                 dcc.Dropdown(
@@ -110,7 +176,19 @@ app.layout = html.Div(
                         {"label": "Pie Chart", "value": "pie-chart"},
                     ],
                     value="bar-chart",
-                ),
+                style={
+                        'width': '90%',
+                        'marginLeft': '10px'
+                    }
+            ), ]
+        ),
+        html.Div(
+            id="chart-selector",
+            style={
+                "backgroundColor": "#fff",
+                'color': colors['text'],
+            },
+            children=[
                 # Chart
                 dcc.Graph(
                     id="info-chart",
@@ -118,10 +196,31 @@ app.layout = html.Div(
                 ),
             ],
         ),
+
+        # Scatter
+        html.P('Scatter Plot: Magnitude vs number of earthquakes',
+               style={'color': colors['text'], }),
+        html.Div([
+            dcc.Graph(
+                id='mag-vs-number',
+                figure=fig
+            )
+        ]),
+
+        # Footer
+        html.Div(
+            id="footer",
+            style={"text-align": "center", "color": colors["text"], 'backgroundColor': '#f2f2f2','fontWeight': 'bold'},
+            children=[
+                html.P("Copyrights © Data Mining Mini Project | 2022 | Aashutosh Aryal and Sabin Thapa"),
+            ],
+        ),
     ],
 )
 
 # Callbacks
+
+
 @app.callback(
     [
         Output(component_id="state-choropleth", component_property="figure"),
@@ -148,7 +247,8 @@ def update_maps(selected_month):
     )
 
     scatter_plot_dff = scatter_plot_df.copy()
-    scatter_plot_dff = scatter_plot_dff[scatter_plot_dff["month"] == selected_month]
+    scatter_plot_dff = scatter_plot_dff[scatter_plot_dff["month"]
+                                        == selected_month]
     top_10_quakes = scatter_plot_dff.sort_values(
         by=["mag"],
         ascending=False,
