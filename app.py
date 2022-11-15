@@ -10,6 +10,7 @@ from dash import (
 )
 
 app = Dash(__name__)
+server = app.server
 app.title = "US Earthquakes Visualization"
 
 colors = {
